@@ -13,7 +13,7 @@
 #include <easy_sdl.h>
 #include <rtv1.h>
 
-Vec3f				raytrace(t_vec rayorig, t_vec raydir, t_data *data)
+Vec3f				raytrace(Ray *ray, t_data *data)
 {
 	float			tnear;
 	float			t0;
@@ -27,7 +27,7 @@ Vec3f				raytrace(t_vec rayorig, t_vec raydir, t_data *data)
 	{
 		t0 = INFINITY;
 		t1 = INFINITY;
-		if (sphere_intersect(rayorig, raydir, data->spheres.spheres[i], &t0, &t1))
+		if (sphere_intersect(ray, data->spheres.spheres[i], &t0, &t1))
 		{
 			if (t0 < 0)
 				t0 = t1;
@@ -42,7 +42,6 @@ Vec3f				raytrace(t_vec rayorig, t_vec raydir, t_data *data)
 	if (current_sphere == NULL)
 		return (set_vec(0.0f, 0.0f, 0.0f));
 	return (current_sphere->mat.surf_color);
-	(void)data;
 }
 
 void				render(t_data *data)
@@ -68,7 +67,10 @@ void				render(t_data *data)
             raydir = vec_normalize(&raydir);
             t_vec rayorig = {0, 5, 10.0f};
 
-            Vec3f vec_color = raytrace(rayorig, raydir, data);
+            Ray ray = {rayorig, raydir};
+            Vec3f vec_color = raytrace(&ray, data);
+
+
 			int red = min(1.0f, vec_color.x) * 255;
 			int green = min(1.0f, vec_color.y) * 255;
 			int blue = min(1.0f, vec_color.z) * 255;
@@ -88,7 +90,6 @@ void				init(t_data *data)
 	init_spheres(2, &(data->spheres));
 	data->spheres.spheres[0] = set_sphere(set_vec(0.0f, 0.0f, -20.0f), 4, white);
     data->spheres.spheres[1] = set_sphere(set_vec(5.0f, -1.0f, -15.0f), 2, red);
-
 }
 
 void				quit(t_data *data)

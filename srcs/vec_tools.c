@@ -1,7 +1,7 @@
 #include <vec.h>
 #include <math.h>
 
-Vec3f				set_vec(float x, float y, float z)
+inline Vec3f				set_vec(float x, float y, float z)
 {
 	Vec3f			ret;
 
@@ -11,7 +11,7 @@ Vec3f				set_vec(float x, float y, float z)
 	return (ret);
 }
 
-Vec3f               vec_sub(Vec3f *v1, Vec3f *v2)
+inline Vec3f               vec_sub(Vec3f *v1, Vec3f *v2)
 {
     Vec3f           ret;
 
@@ -21,7 +21,7 @@ Vec3f               vec_sub(Vec3f *v1, Vec3f *v2)
     return (ret);
 }
 
-Vec3f				vec_add(Vec3f *v1, Vec3f *v2)
+inline Vec3f				vec_add(Vec3f *v1, Vec3f *v2)
 {
 	Vec3f			ret;
 
@@ -31,7 +31,7 @@ Vec3f				vec_add(Vec3f *v1, Vec3f *v2)
 	return (ret);
 }
 
-Vec3f				vec_add_f(Vec3f *v1, float value)
+inline Vec3f				vec_add_f(Vec3f *v1, float value)
 {
 	Vec3f			ret;
 
@@ -41,7 +41,7 @@ Vec3f				vec_add_f(Vec3f *v1, float value)
 	return (ret);
 }
 
-Vec3f         vec_mult_f(Vec3f *v, float f)
+inline Vec3f         vec_mult_f(Vec3f *v, float f)
 {
     Vec3f     ret;
 
@@ -51,7 +51,7 @@ Vec3f         vec_mult_f(Vec3f *v, float f)
     return (ret);
 }
 
-Vec3f				vec_mult(Vec3f *v1, Vec3f *v2)
+inline Vec3f				vec_mult(Vec3f *v1, Vec3f *v2)
 {
 	Vec3f			ret;
 
@@ -61,12 +61,12 @@ Vec3f				vec_mult(Vec3f *v1, Vec3f *v2)
 	return (ret);
 }
 
-float				dot_product(Vec3f *v1, Vec3f *v2)
+inline float				dot_product(Vec3f *v1, Vec3f *v2)
 {
 	return (v1->x * v2->x + v1->y * v2->y + v1->z * v2->z);
 }
 
-float				vec_length(Vec3f *vec)
+inline float				vec_length(Vec3f *vec)
 {
 	return (sqrtf(vec->x * vec->x + vec->y * vec->y + vec->z * vec->z));
 }

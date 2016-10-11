@@ -25,10 +25,10 @@ Sphere		set_sphere(Vec3f pos, float radius, Material mat)
 	return (sphere);
 }
 
-int			sphere_intersect(t_vec rayorig, t_vec raydir, Sphere sphere, float *t0, float *t1)
+int			sphere_intersect(Ray *ray, Sphere sphere, float *t0, float *t1)
 {
-	t_vec l = vec_sub(&sphere.pos, &rayorig);
-	float tca = dot_product(&l, &raydir);
+	t_vec l = vec_sub(&sphere.pos, &(ray->pos));
+	float tca = dot_product(&l, &(ray->dir));
 	if (tca < 0)
 	    return (0);
 	float d2 = dot_product(&l, &l) - tca * tca;

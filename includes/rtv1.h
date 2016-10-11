@@ -31,6 +31,13 @@ typedef struct			s_spheres
 }						t_spheres;
 typedef t_spheres		Spheres;
 
+typedef struct			s_ray
+{
+	Vec3f				pos;
+	Vec3f				dir;
+}						t_ray;
+typedef t_ray			Ray;
+
 typedef struct			s_data
 {
 	Spheres				spheres;
@@ -42,7 +49,7 @@ typedef struct			s_data
 int			init_spheres(size_t nb_spheres, Spheres *spheres);
 void		free_spheres(Spheres *spheres);
 Sphere		set_sphere(Vec3f pos, float radius, Material mat);
-int			sphere_intersect(t_vec rayorig, t_vec raydir, Sphere sphere, float *t0, float *t1);
+int			sphere_intersect(Ray *ray, Sphere sphere, float *t0, float *t1);
 
 Material	set_material(Vec3f surf_color, Vec3f emis_color, float spec_value, float spec_power);
 
