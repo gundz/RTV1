@@ -13,6 +13,22 @@
 #include <easy_sdl.h>
 #include <rtv1.h>
 
+int
+intersectPlane(Vec3f n, Vec3f p0, Vec3f l0, Vec3f l, float *t)
+{
+	float denom;
+    // assuming vectors are all normalized
+    denom = dot_product(&n, &l);
+
+    if (denom > 1e-6)
+    {
+        Vec3f p0l0 = vec_sub(&p0, &l0);
+        *t = dot_product(&p0l0, &n) / denom;
+        return (*t >= 0);
+    }
+    return (0);
+}
+
 Vec3f				raytrace(Ray *ray, t_data *data)
 {
 	float			tnear;
@@ -38,6 +54,11 @@ Vec3f				raytrace(Ray *ray, t_data *data)
 			}
 		}
 	}
+
+	Vec3f plane_pos = set_vec(0.0f, 0.0f, 0.0f);
+	Vec3f plane_norm = set_vec(0.0f, 0.0f, 0.0f);
+	intersectPlane(Vec3f n, Vec3f p0, Vec3f l0, Vec3f l, float *t)
+
 
 	if (current_sphere == NULL)
 		return (set_vec(0.0f, 0.0f, 0.0f));
