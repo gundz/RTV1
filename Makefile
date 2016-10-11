@@ -2,6 +2,8 @@
 #CONFIG
 	SRCS =			main.c \
 					vec_tools.c \
+					spheres.c \
+					material.c \
 
 	#CUDA CONFIG
 	SRCS_NO_CUDA =	\

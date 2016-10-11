@@ -1,20 +1,9 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   header.h                                           :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: fgundlac <marvin@42.fr>                    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2016/09/17 16:00:29 by fgundlac          #+#    #+#             */
-/*   Updated: 2016/09/17 16:00:30 by fgundlac         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef HEADER_H
 # define HEADER_H
 
 # include <easy_sdl.h>
 # include <vec.h>
+# include <unistd.h>
 # include <time.h>
 
 typedef struct			s_material
@@ -49,5 +38,12 @@ typedef struct			s_data
 	SDL_Surface			*surf;
 	SDL_Texture			*tex;
 }						t_data;
+
+int			init_spheres(size_t nb_spheres, Spheres *spheres);
+void		free_spheres(Spheres *spheres);
+Sphere		set_sphere(Vec3f pos, float radius, Material mat);
+int			sphere_intersect(t_vec rayorig, t_vec raydir, Sphere sphere, float *t0, float *t1);
+
+Material	set_material(Vec3f surf_color, Vec3f emis_color, float spec_value, float spec_power);
 
 #endif

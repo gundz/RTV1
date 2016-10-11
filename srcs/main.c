@@ -13,21 +13,6 @@
 #include <easy_sdl.h>
 #include <rtv1.h>
 
-int					sphere_intersect(t_vec rayorig, t_vec raydir, Sphere sphere, float *t0, float *t1)
-{
-	t_vec l = vec_sub(&sphere.pos, &rayorig);
-	float tca = dot_product(&l, &raydir);
-	if (tca < 0)
-	    return (0);
-	float d2 = dot_product(&l, &l) - tca * tca;
-	if (d2 > (sphere.rad * sphere.rad))
-	    return (0);
-	float thc = sqrtf((sphere.rad * sphere.rad) - d2);
-	*t0 = tca - thc;
-	*t1 = tca + thc;
-	return (1);
-}
-
 Vec3f				raytrace(t_vec rayorig, t_vec raydir, t_data *data)
 {
 	float			tnear;
@@ -35,7 +20,9 @@ Vec3f				raytrace(t_vec rayorig, t_vec raydir, t_data *data)
 	float			t1;
 
 	Sphere			*sphere = NULL;
-	Sphere			spheres = {{0.0f, 0.0f, -20.0f}, 4, {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, 0, 0}, 0};
+
+	Material		mat = set_material(set_vec(1.0f, 1.0f, 1.0f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
+	Sphere			spheres = set_sphere(set_vec(0.0f, 0.0f, -20.0f), 4, mat);
 
 	tnear = INFINITY;
 
@@ -89,20 +76,6 @@ void				render(t_data *data)
             esdl_put_pixel(data->surf, x, y, color);
 		}
 	}
-}
-
-int				init_spheres(size_t nb_spheres, Spheres *spheres)
-{
-	spheres->nb_spheres = nb_spheres;
-	spheres->spheres = NULL;
-	if (!(spheres->spheres = (Sphere *)malloc(sizeof(Sphere) * nb_spheres)))
-		return (0);
-	return (1);
-}
-
-void				free_spheres(Spheres *spheres)
-{
-	free(spheres->spheres);
 }
 
 void				init(t_data *data)
