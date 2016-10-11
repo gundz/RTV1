@@ -19,29 +19,29 @@ Vec3f				raytrace(t_vec rayorig, t_vec raydir, t_data *data)
 	float			t0;
 	float			t1;
 
-	Sphere			*sphere = NULL;
+	Sphere			*current_sphere = NULL;
 
-	Material		mat = set_material(set_vec(1.0f, 1.0f, 1.0f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
-	Sphere			spheres = set_sphere(set_vec(0.0f, 0.0f, -20.0f), 4, mat);
 
 	tnear = INFINITY;
-
+	for (size_t i = 0; i < data->spheres.nb_spheres; i++)
+	{
 		t0 = INFINITY;
 		t1 = INFINITY;
-		if (sphere_intersect(rayorig, raydir, spheres, &t0, &t1))
+		if (sphere_intersect(rayorig, raydir, data->spheres.spheres[i], &t0, &t1))
 		{
 			if (t0 < 0)
 				t0 = t1;
 			if (t0 < tnear)
 			{
 				tnear = t0;
-				sphere = &(spheres);
+				current_sphere = &(data->spheres.spheres[i]);
 			}
 		}
+	}
 
-	if (sphere == NULL)
+	if (current_sphere == NULL)
 		return (set_vec(0.0f, 0.0f, 0.0f));
-	return (set_vec(1.0f, 1.0f, 1.0f));
+	return (current_sphere->mat.surf_color);
 	(void)data;
 }
 
@@ -82,7 +82,13 @@ void				init(t_data *data)
 {
 	data->surf = esdl_create_surface(SDL_RX, SDL_RY);
 
-	init_spheres(1, &(data->spheres));
+	Material		white = set_material(set_vec(1.0f, 1.0f, 1.0f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
+	Material		red = set_material(set_vec(1.0f, 0.0f, 0.0f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
+
+	init_spheres(2, &(data->spheres));
+	data->spheres.spheres[0] = set_sphere(set_vec(0.0f, 0.0f, -20.0f), 4, white);
+    data->spheres.spheres[1] = set_sphere(set_vec(5.0f, -1.0f, -15.0f), 2, red);
+
 }
 
 void				quit(t_data *data)
