@@ -4,7 +4,7 @@
 # include <easy_sdl.h>
 # include <vec.h>
 # include <unistd.h>
-# include <time.h>
+# include <sys/time.h>
 
 typedef struct			s_material
 {
@@ -44,6 +44,9 @@ typedef struct			s_data
 	t_esdl				*esdl;
 	SDL_Surface			*surf;
 	SDL_Texture			*tex;
+
+	Vec3f				plane_pos;
+	Vec3f				plane_norm;
 }						t_data;
 
 int			init_spheres(size_t nb_spheres, Spheres *spheres);

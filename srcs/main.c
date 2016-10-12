@@ -55,14 +55,48 @@ Vec3f				raytrace(Ray *ray, t_data *data)
 		}
 	}
 
-	Vec3f plane_pos = set_vec(0.0f, 0.0f, 0.0f);
-	Vec3f plane_norm = set_vec(0.0f, 0.0f, 0.0f);
-	intersectPlane(Vec3f n, Vec3f p0, Vec3f l0, Vec3f l, float *t)
-
+	float tt;
+	int ret = intersectPlane(vec_normalize(&(data->plane_norm)), data->plane_pos, ray->pos, ray->dir, &tt);
+	if (ret == 1)
+		return (set_vec(0.5f, 0.5f, 0.0f));
 
 	if (current_sphere == NULL)
 		return (set_vec(0.0f, 0.0f, 0.0f));
+
 	return (current_sphere->mat.surf_color);
+}
+
+void				bite(t_data *data)
+{
+	if (data->esdl->en.in.key[SDL_SCANCODE_Q] == 1)
+		data->plane_norm.x += 0.1f;
+	if (data->esdl->en.in.key[SDL_SCANCODE_W] == 1)
+		data->plane_norm.y += 0.1f;
+	if (data->esdl->en.in.key[SDL_SCANCODE_E] == 1)
+		data->plane_norm.z += 0.1f;
+
+	if (data->esdl->en.in.key[SDL_SCANCODE_A] == 1)
+		data->plane_norm.x -= 0.1f;
+	if (data->esdl->en.in.key[SDL_SCANCODE_S] == 1)
+		data->plane_norm.y -= 0.1f;
+	if (data->esdl->en.in.key[SDL_SCANCODE_D] == 1)
+		data->plane_norm.z -= 0.1f;
+
+	if (data->esdl->en.in.key[SDL_SCANCODE_T] == 1)
+		data->plane_pos.x += 0.1f;
+	if (data->esdl->en.in.key[SDL_SCANCODE_Y] == 1)
+		data->plane_pos.y += 0.1f;
+	if (data->esdl->en.in.key[SDL_SCANCODE_U] == 1)
+		data->plane_pos.z += 0.1f;
+
+	if (data->esdl->en.in.key[SDL_SCANCODE_G] == 1)
+		data->plane_pos.x -= 0.1f;
+	if (data->esdl->en.in.key[SDL_SCANCODE_H] == 1)
+		data->plane_pos.y -= 0.1f;
+	if (data->esdl->en.in.key[SDL_SCANCODE_J] == 1)
+		data->plane_pos.z -= 0.1f;
+
+	printf("%f %f %f\n", data->plane_norm.x, data->plane_norm.y, data->plane_norm.z);
 }
 
 void				render(t_data *data)
@@ -73,7 +107,9 @@ void				render(t_data *data)
 	float aspectratio = SDL_RX / (float)SDL_RY;
 	float angle = tan(M_PI * 0.5f * fov / 180.0f);
 
-	t_vec camera_pos = set_vec(0.0f, -0.2f, 0.0f);
+	t_vec camera_pos = set_vec(0.0f, 0.0f, 0.5f);
+
+	bite(data);
 
 	for (int y = 0; y < SDL_RY; y++)
 	{
@@ -86,7 +122,7 @@ void				render(t_data *data)
             raydir = vec_add(&raydir, &camera_pos);
 
             raydir = vec_normalize(&raydir);
-            t_vec rayorig = {0, 5, 10.0f};
+            t_vec rayorig = {0.0f, 0.0f, 0.0f};
 
             Ray ray = {rayorig, raydir};
             Vec3f vec_color = raytrace(&ray, data);
@@ -111,6 +147,9 @@ void				init(t_data *data)
 	init_spheres(2, &(data->spheres));
 	data->spheres.spheres[0] = set_sphere(set_vec(0.0f, 0.0f, -20.0f), 4, white);
     data->spheres.spheres[1] = set_sphere(set_vec(5.0f, -1.0f, -15.0f), 2, red);
+
+	data->plane_pos = set_vec(0.0f, 0.0f, 0.0f);
+	data->plane_norm = set_vec(0.0f, -15.0f, 4.0f);
 }
 
 void				quit(t_data *data)
@@ -139,16 +178,18 @@ int					main(int argc, char **argv)
 		return (-1);
 	init(&data);
 
-	struct timespec start, end;
-	clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+
+	struct timeval stop, start;
+	gettimeofday(&start, NULL);
 
 	render(&data);
 
-	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-	uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
-	printf("%" PRId64 "\n", delta_us);
+	gettimeofday(&stop, NULL);
+	printf("took %d\n", stop.tv_usec - start.tv_usec);
 
 	display(&data);
+
+
 	while (esdl.run)
 	{
 		esdl_update_events(&esdl.en.in, &esdl.run);
