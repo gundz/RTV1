@@ -1,33 +1,34 @@
 #include <rtv1.h>
 
-int			init_spheres(size_t nb_spheres, Spheres *spheres)
+int			init_objects(size_t nb_obj, Objects *objects)
 {
-	spheres->nb_spheres = nb_spheres;
-	spheres->spheres = NULL;
-	if (!(spheres->spheres = (Sphere *)malloc(sizeof(Sphere) * nb_spheres)))
+	objects->nb_obj = nb_obj;
+	objects->objects = NULL;
+	if (!(objects->objects = (Object *)malloc(sizeof(Object) * nb_obj)))
 		return (0);
 	return (1);
 }
 
-void		free_spheres(Spheres *spheres)
+void		free_objects(Objects *objects)
 {
-	free(spheres->spheres);
+	free(objects->objects);
 }
 
-Sphere		set_sphere(Vec3f pos, float radius, Material mat)
+Object		set_sphere(Vec3f pos, float radius, Material mat)
 {
-	Sphere	sphere;
+	Object	object;
 
-	sphere.pos = pos;
-	sphere.rad = radius;
-	sphere.mat = mat;
-	sphere.is_light = 0;
-	return (sphere);
+	object.objtype = SPHERE;
+	object.pos = pos;
+	object.rad = radius;
+	object.mat = mat;
+	object.is_light = 0;
+	return (object);
 }
 
-Sphere		set_light(Vec3f pos, float radius, Material mat)
+Object		set_light(Vec3f pos, float radius, Material mat)
 {
-	Sphere	light;
+	Object	light;
 
 	light.pos = pos;
 	light.rad = radius;
@@ -36,16 +37,16 @@ Sphere		set_light(Vec3f pos, float radius, Material mat)
 	return (light);
 }
 
-int			sphere_intersect(Ray *ray, Sphere sphere, float *t0, float *t1)
+int			sphere_intersect(Ray *ray, Object object, float *t0, float *t1)
 {
-	t_vec l = vec_sub(sphere.pos, ray->pos);
+	t_vec l = vec_sub(object.pos, ray->pos);
 	float tca = dot_product(l, ray->dir);
 	if (tca < 0)
 	    return (0);
 	float d2 = dot_product(l, l) - tca * tca;
-	if (d2 > (sphere.rad * sphere.rad))
+	if (d2 > (object.rad * object.rad))
 	    return (0);
-	float thc = sqrtf((sphere.rad * sphere.rad) - d2);
+	float thc = sqrtf((object.rad * object.rad) - d2);
 	*t0 = tca - thc;
 	*t1 = tca + thc;
 	return (1);

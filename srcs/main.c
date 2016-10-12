@@ -30,6 +30,18 @@ intersectPlane(Ray ray, Vec3f pos, Vec3f normal, float *t)
 	return (0);
 }
 
+Object
+set_plane(Vec3f pos, Vec3f norm, Material mat)
+{
+	Object	object;
+
+	object.objtype = PLANE;
+	object.pos = pos;
+	object.norm = norm;
+	object.mat = mat;
+	return (object);
+}
+
 float			calculateLambert(t_vec lightDirection, t_vec nhit)
 {
 	return (max(0.0f, dot_product(lightDirection, nhit)));
@@ -41,78 +53,55 @@ Vec3f				raytrace(Ray *ray, t_data *data)
 	float			t0;
 	float			t1;
 
-	Sphere			*current_sphere = NULL;
+	Object			*current_obj = NULL;
 
 
 	tnear = INFINITY;
-	for (size_t i = 0; i < data->spheres.nb_spheres; i++)
+	for (size_t i = 0; i < data->objects.nb_obj; i++)
 	{
 		t0 = INFINITY;
 		t1 = INFINITY;
-		if (sphere_intersect(ray, data->spheres.spheres[i], &t0, &t1))
+		if (data->objects.objects[i].objtype == SPHERE && sphere_intersect(ray, data->objects.objects[i], &t0, &t1))
 		{
 			if (t0 < 0)
 				t0 = t1;
 			if (t0 < tnear)
 			{
 				tnear = t0;
-				current_sphere = &(data->spheres.spheres[i]);
+				current_obj = &(data->objects.objects[i]);
+			}
+		}
+		else if (data->objects.objects[i].objtype == PLANE && intersectPlane(*ray, data->objects.objects[i].pos, data->objects.objects[i].norm, &t0))
+		{
+			if (t0 < tnear)
+			{
+				tnear = t0;
+				current_obj = &(data->objects.objects[i]);
 			}
 		}
 	}
 
-	/*
-	int ret = intersectPlane(*ray, data->plane_pos, vec_normalize(data->plane_norm), &tnear);
-	if (ret == 0)
+	if (current_obj == NULL)
 		return (set_vec(0.0f, 0.0f, 0.0f));
 
-	t_vec phit = vec_add(ray->pos, vec_mult_f(ray->dir, tnear));
-	t_vec nhit = vec_sub(phit, data->plane_pos);
-	nhit = vec_normalize(nhit);
-
-	t_vec lightDirection = vec_sub(data->plane_pos, phit);
-	lightDirection = vec_normalize(lightDirection);
-
-	float lambert = calculateLambert(lightDirection, data->plane_norm);
-
-	return (vec_mult_f(set_vec(0.5f, 0.5f, 0.0f), lambert));
-	*/
-
-	//if (current_sphere == NULL)
-	//	return (set_vec(0.0f, 0.0f, 0.0f));
-
-	int ret = intersectPlane(*ray, data->plane_pos, data->plane_norm, &tnear);
-	if (ret == 0)
-		return (set_vec(0.0f, 0.0f, 0.0f));
-
-	// t_vec phit = vec_add(ray->pos, vec_mult_f(ray->dir, tnear));
-	// t_vec nhit = vec_sub(phit, current_sphere->pos);
-	// nhit = vec_normalize(nhit);
 
 	t_vec phit = vec_add(ray->pos, vec_mult_f(ray->dir, tnear));
-	t_vec nhit = vec_sub(phit, data->plane_pos);
+	t_vec nhit = vec_sub(phit, current_obj->pos);
 	nhit = vec_normalize(nhit);
 
 	Vec3f color;
-	for (size_t i = 0; i < data->spheres.nb_spheres; i++)
+	for (size_t i = 0; i < data->objects.nb_obj; i++)
 	{
-		if (data->spheres.spheres[i].is_light == 1)
+		if (data->objects.objects[i].is_light == 1)
 		{
-			// t_vec lightDirection = vec_sub(data->spheres.spheres[i].pos, phit);
-			// lightDirection = vec_normalize(lightDirection);
-
-			// float lambert = calculateLambert(lightDirection, nhit);
-			// 	color = vec_mult_f(data->spheres.spheres[i].mat.emis_color, lambert);
-
-			t_vec lightDirection = vec_sub(data->spheres.spheres[i].pos, phit);
+			t_vec lightDirection = vec_sub(data->objects.objects[i].pos, phit);
 			lightDirection = vec_normalize(lightDirection);
 
-			float lambert = calculateLambert(lightDirection, data->plane_norm);
-				color = vec_mult_f(data->spheres.spheres[i].mat.emis_color, lambert);
+			float lambert = calculateLambert(lightDirection, nhit);
+				color = vec_mult_f(data->objects.objects[i].mat.emis_color, lambert);
 		}
 	}
-	(void)current_sphere;
-	return (vec_mult(set_vec(1.0f, 1.0f, 0.0f), color));
+	return (vec_mult(current_obj->mat.surf_color, color));
 }
 
 void				bite(t_data *data)
@@ -202,22 +191,21 @@ void				init(t_data *data)
 
 	Material		white = set_material(set_vec(1.0f, 1.0f, 1.0f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
 	Material		red = set_material(set_vec(1.0f, 0.0f, 0.0f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
+	Material		blue = set_material(set_vec(0.0f, 0.0f, 1.0f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
 	Material		light = set_material(set_vec(0.0f, 0.0f, 0.0f), set_vec(1.0f, 1.0f, 1.0f), 0.0f, 0.0f);
 
-	init_spheres(3, &(data->spheres));
-	data->spheres.spheres[0] = set_sphere(set_vec(0.0f, 0.0f, 0.0f), 10, white);
-    data->spheres.spheres[1] = set_sphere(set_vec(0.0f, 18.0, 0.0f), 10, red);
-    data->spheres.spheres[2] = set_light(set_vec(0.0f, 00.0f, -200.0f), 3, light);
-
-	data->plane_pos = set_vec(0.0f, -10.0f, 0.0f);
-	data->plane_norm = set_vec(0.0f, 1.0f, 0.0f);
+	init_objects(4, &(data->objects));
+	data->objects.objects[0] = set_sphere(set_vec(0.0f, 0.0f, 0.0f), 10, white);
+    data->objects.objects[1] = set_sphere(set_vec(0.0f, 18.0, 0.0f), 10, red);
+    data->objects.objects[2] = set_plane(set_vec(0.0f, -10.0f, 0.0f), set_vec(0.0f, 1.0f, 0.0f), blue);
+    data->objects.objects[3] = set_light(set_vec(0.0f, 100.0f, -300.0f), 3, light);
 }
 
 void				quit(t_data *data)
 {
 	SDL_FreeSurface(data->surf);
 
-	free_spheres(&(data->spheres));
+	free_objects(&(data->objects));
 }
 
 void				display(t_data *data)

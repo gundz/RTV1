@@ -6,6 +6,12 @@
 # include <unistd.h>
 # include <sys/time.h>
 
+typedef enum			e_object_type
+{
+	SPHERE, PLANE
+}						t_object_type;
+typedef t_object_type	ObjType;
+
 typedef struct			s_material
 {
 	Vec3f				surf_color;
@@ -15,21 +21,23 @@ typedef struct			s_material
 }						t_material;
 typedef t_material 		Material;
 
-typedef struct			s_sphere
+typedef struct			s_object
 {
 	Vec3f				pos;
 	float				rad;
+	Vec3f				norm;
 	Material			mat;
 	int					is_light;
-}						t_sphere;
-typedef t_sphere		Sphere;
+	int					objtype;
+}						t_object;
+typedef t_object		Object;
 
-typedef struct			s_spheres
+typedef struct			s_objects
 {
-	size_t				nb_spheres;
-	Sphere				*spheres;
-}						t_spheres;
-typedef t_spheres		Spheres;
+	size_t				nb_obj;
+	Object				*objects;
+}						t_objects;
+typedef t_objects		Objects;
 
 typedef struct			s_ray
 {
@@ -40,7 +48,7 @@ typedef t_ray			Ray;
 
 typedef struct			s_data
 {
-	Spheres				spheres;
+	Objects				objects;
 	t_esdl				*esdl;
 	SDL_Surface			*surf;
 	SDL_Texture			*tex;
@@ -49,11 +57,12 @@ typedef struct			s_data
 	Vec3f				plane_norm;
 }						t_data;
 
-int			init_spheres(size_t nb_spheres, Spheres *spheres);
-void		free_spheres(Spheres *spheres);
-Sphere		set_sphere(Vec3f pos, float radius, Material mat);
-Sphere		set_light(Vec3f pos, float radius, Material mat);
-int			sphere_intersect(Ray *ray, Sphere sphere, float *t0, float *t1);
+int			init_objects(size_t nb_spheres, Objects *objects);
+void		free_objects(Objects *objects);
+Object		set_sphere(Vec3f pos, float radius, Material mat);
+Object		set_light(Vec3f pos, float radius, Material mat);
+int			sphere_intersect(Ray *ray, Object object, float *t0, float *t1);
+
 
 Material	set_material(Vec3f surf_color, Vec3f emis_color, float spec_value, float spec_power);
 
