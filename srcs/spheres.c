@@ -25,13 +25,24 @@ Sphere		set_sphere(Vec3f pos, float radius, Material mat)
 	return (sphere);
 }
 
+Sphere		set_light(Vec3f pos, float radius, Material mat)
+{
+	Sphere	light;
+
+	light.pos = pos;
+	light.rad = radius;
+	light.mat = mat;
+	light.is_light = 1;
+	return (light);
+}
+
 int			sphere_intersect(Ray *ray, Sphere sphere, float *t0, float *t1)
 {
-	t_vec l = vec_sub(&sphere.pos, &(ray->pos));
-	float tca = dot_product(&l, &(ray->dir));
+	t_vec l = vec_sub(sphere.pos, ray->pos);
+	float tca = dot_product(l, ray->dir);
 	if (tca < 0)
 	    return (0);
-	float d2 = dot_product(&l, &l) - tca * tca;
+	float d2 = dot_product(l, l) - tca * tca;
 	if (d2 > (sphere.rad * sphere.rad))
 	    return (0);
 	float thc = sqrtf((sphere.rad * sphere.rad) - d2);
