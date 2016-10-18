@@ -47,6 +47,21 @@ float			calculateLambert(t_vec lightDirection, t_vec nhit)
 	return (max(0.0f, dot_product(lightDirection, nhit)));
 }
 
+float calculatePhong(Vec3f lightDirection, Vec3f phit, Vec3f nhit, Ray ray)
+{
+	Material sphereMaterial = {set_vec(0.0f, 0.0f, 0.0f), set_vec(0.0f, 0.0f, 0.0f), 5.0f, 100.0f};
+
+	t_vec viewDirection = vec_sub(phit, ray.pos);
+	viewDirection = vec_normalize(viewDirection);
+
+
+	t_vec blinnDirection = vec_sub(lightDirection, viewDirection);
+	blinnDirection = vec_normalize(blinnDirection);
+
+	float blinnTerm = max(dot_product(blinnDirection, nhit), 0.0f);
+	return sphereMaterial.spec_value * powf(blinnTerm, sphereMaterial.spec_power);
+}
+
 Vec3f				raytrace(Ray *ray, t_data *data)
 {
 	float			tnear;
@@ -94,48 +109,38 @@ Vec3f				raytrace(Ray *ray, t_data *data)
 	{
 		if (data->objects.objects[i].is_light == 1)
 		{
-			t_vec lightDirection = vec_sub(data->objects.objects[i].pos, phit);
+			int shadowed = 1;
+			Object current_light = data->objects.objects[i];
+
+			t_vec lightDirection = vec_sub(current_light.pos, phit);
 			lightDirection = vec_normalize(lightDirection);
 
-			float lambert = calculateLambert(lightDirection, nhit);
-				color = vec_mult_f(data->objects.objects[i].mat.emis_color, lambert);
+			for (size_t j = 0; j < data->objects.nb_obj; j++)
+			{
+				if (i != j)
+				{
+					Object tmp_obj = data->objects.objects[j];
+					Ray ray_tmp = {vec_add(phit, nhit), lightDirection};
+					if (tmp_obj.objtype == SPHERE && sphere_intersect(&ray_tmp, tmp_obj, &t0, &t1))
+					{
+						shadowed = 0;
+						break ;
+					}
+				}
+			}
+
+			float lambert = 0, phongTerm = 0;
+			if (shadowed == 1)
+			{
+				lambert = calculateLambert(lightDirection, nhit);
+				phongTerm = calculatePhong(lightDirection, phit, nhit, *ray);
+
+			}
+			color = vec_mult( current_obj->mat.surf_color, vec_add( vec_mult_f( current_light.mat.emis_color, lambert), vec_mult_f( current_obj->mat.surf_color, phongTerm ) ) );
+
 		}
 	}
 	return (vec_mult(current_obj->mat.surf_color, color));
-}
-
-void				bite(t_data *data)
-{
-	if (data->esdl->en.in.key[SDL_SCANCODE_Q] == 1)
-		data->plane_norm.x += 0.1f;
-	if (data->esdl->en.in.key[SDL_SCANCODE_W] == 1)
-		data->plane_norm.y += 0.1f;
-	if (data->esdl->en.in.key[SDL_SCANCODE_E] == 1)
-		data->plane_norm.z += 0.1f;
-
-	if (data->esdl->en.in.key[SDL_SCANCODE_A] == 1)
-		data->plane_norm.x -= 0.1f;
-	if (data->esdl->en.in.key[SDL_SCANCODE_S] == 1)
-		data->plane_norm.y -= 0.1f;
-	if (data->esdl->en.in.key[SDL_SCANCODE_D] == 1)
-		data->plane_norm.z -= 0.1f;
-
-	if (data->esdl->en.in.key[SDL_SCANCODE_T] == 1)
-		data->plane_pos.x += 0.1f;
-	if (data->esdl->en.in.key[SDL_SCANCODE_Y] == 1)
-		data->plane_pos.y += 0.1f;
-	if (data->esdl->en.in.key[SDL_SCANCODE_U] == 1)
-		data->plane_pos.z += 0.1f;
-
-	if (data->esdl->en.in.key[SDL_SCANCODE_G] == 1)
-		data->plane_pos.x -= 0.1f;
-	if (data->esdl->en.in.key[SDL_SCANCODE_H] == 1)
-		data->plane_pos.y -= 0.1f;
-	if (data->esdl->en.in.key[SDL_SCANCODE_J] == 1)
-		data->plane_pos.z -= 0.1f;
-
-	printf("%f %f %f\n", data->plane_norm.x, data->plane_norm.y, data->plane_norm.z);
-	printf("%f %f %f\n", data->plane_pos.x, data->plane_pos.y, data->plane_pos.z);
 }
 
 Vec3f			pixelCoordinateToWorldCoordinate(float x, float y, int rx, int ry)
@@ -150,7 +155,7 @@ Vec3f			pixelCoordinateToWorldCoordinate(float x, float y, int rx, int ry)
 
     ret.x = (2.0f * ((x + 0.5f) * invWidth) - 1.0f) * angle * aspectratio;
     ret.y = (1.0f - 2.0f * ((y + 0.5f) * invHeight)) * angle;
-    ret.z = 1;
+    ret.z = -1.0f;
     return (ret);
 }
 
@@ -158,10 +163,8 @@ void				render(t_data *data)
 {
 	Ray				ray;
 
-	t_vec camera_pos = set_vec(0.0f, 0.0f, -200.0f);
-	Vec3f cameraLookAt = set_vec(0.0f, 0.0f, 0.0f);
-
-	bite(data);
+	t_vec camera_pos = set_vec(0.0f, 5.0f, 10.0f);
+	Vec3f cameraLookAt = set_vec(0.0f, -0.2f, 0.0f);
 
 	for (int y = 0; y < SDL_RY; y++)
 	{
@@ -189,16 +192,23 @@ void				init(t_data *data)
 {
 	data->surf = esdl_create_surface(SDL_RX, SDL_RY);
 
-	Material		white = set_material(set_vec(1.0f, 1.0f, 1.0f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
-	Material		red = set_material(set_vec(1.0f, 0.0f, 0.0f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
-	Material		blue = set_material(set_vec(0.0f, 0.0f, 1.0f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
-	Material		light = set_material(set_vec(0.0f, 0.0f, 0.0f), set_vec(1.0f, 1.0f, 1.0f), 0.0f, 0.0f);
+	Material		white = set_material(set_vec(0.9f, 0.9f, 0.9f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
+	Material		grey = set_material(set_vec(0.2f, 0.2f, 0.2f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
+	Material		red = set_material(set_vec(1.0f, 0.32f, 0.36f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
+	Material		blue = set_material(set_vec(0.65f, 0.77f, 0.97f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
+	Material		yellow = set_material(set_vec(0.9f, 0.76f, 0.46f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
 
-	init_objects(4, &(data->objects));
-	data->objects.objects[0] = set_sphere(set_vec(0.0f, 0.0f, 0.0f), 10, white);
-    data->objects.objects[1] = set_sphere(set_vec(0.0f, 18.0, 0.0f), 10, red);
-    data->objects.objects[2] = set_plane(set_vec(0.0f, -10.0f, 0.0f), set_vec(0.0f, 1.0f, 0.0f), blue);
-    data->objects.objects[3] = set_light(set_vec(0.0f, 100.0f, -300.0f), 3, light);
+	Material		light = set_material(set_vec(0.0f, 0.0f, 0.0f), set_vec(2.0f, 2.0f, 2.0f), 0.0f, 0.0f);
+
+	init_objects(7, &(data->objects));
+	data->objects.objects[0] = set_plane(set_vec(0.0f, -3.0f, 0.0f), set_vec(0.0f, 1.0f, 0.0f), grey);
+    data->objects.objects[1] = set_sphere(set_vec(0.0f, 0.0, -20.0f), 4.0f, red);
+    data->objects.objects[2] = set_sphere(set_vec(5.0f, -1.0f, -15.0f), 2.0f, yellow);
+    data->objects.objects[3] = set_sphere(set_vec(5.0f, 0.0f, -25.0f), 3.0f, blue);
+    data->objects.objects[4] = set_sphere(set_vec(-5.5f, 0.0f, -15.0f), 3.0f, white);
+    data->objects.objects[5] = set_light(set_vec(-50.0f, 20.0f, -30.0f), 3.0f, light);
+    data->objects.objects[6] = set_light(set_vec(50.0f, 20.0f, -30.0f), 3.0f, light);
+
 }
 
 void				quit(t_data *data)
@@ -228,13 +238,6 @@ int					main(int argc, char **argv)
 	init(&data);
 
 
-
-
-
-	while (esdl.run)
-	{
-		esdl_update_events(&esdl.en.in, &esdl.run);
-
 	struct timeval stop, start;
 	gettimeofday(&start, NULL);
 
@@ -244,6 +247,11 @@ int					main(int argc, char **argv)
 	printf("took %ld\n", stop.tv_usec - start.tv_usec);
 
 	display(&data);
+
+
+	while (esdl.run)
+	{
+		esdl_update_events(&esdl.en.in, &esdl.run);
 
 		esdl_fps_limit(&esdl);
 		esdl_fps_counter(&esdl);
