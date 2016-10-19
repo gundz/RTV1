@@ -47,10 +47,8 @@ float			calculateLambert(t_vec lightDirection, t_vec nhit)
 	return (max(0.0f, dot_product(lightDirection, nhit)));
 }
 
-float calculatePhong(Vec3f lightDirection, Vec3f phit, Vec3f nhit, Ray ray)
+float calculatePhong(Vec3f lightDirection, Vec3f phit, Vec3f nhit, Ray ray, Material mat)
 {
-	Material sphereMaterial = {set_vec(0.0f, 0.0f, 0.0f), set_vec(0.0f, 0.0f, 0.0f), 5.0f, 100.0f};
-
 	t_vec viewDirection = vec_sub(phit, ray.pos);
 	viewDirection = vec_normalize(viewDirection);
 
@@ -59,7 +57,7 @@ float calculatePhong(Vec3f lightDirection, Vec3f phit, Vec3f nhit, Ray ray)
 	blinnDirection = vec_normalize(blinnDirection);
 
 	float blinnTerm = max(dot_product(blinnDirection, nhit), 0.0f);
-	return sphereMaterial.spec_value * powf(blinnTerm, sphereMaterial.spec_power);
+	return mat.spec_value * powf(blinnTerm, mat.spec_power);
 }
 
 Vec3f				raytrace(Ray *ray, t_data *data)
@@ -104,7 +102,7 @@ Vec3f				raytrace(Ray *ray, t_data *data)
 	t_vec nhit = vec_sub(phit, current_obj->pos);
 	nhit = vec_normalize(nhit);
 
-	Vec3f color;
+	Vec3f color = set_vec(0.0f, 0.0f, 0.0f);
 	for (size_t i = 0; i < data->objects.nb_obj; i++)
 	{
 		if (data->objects.objects[i].is_light == 1)
@@ -126,6 +124,12 @@ Vec3f				raytrace(Ray *ray, t_data *data)
 						shadowed = 0;
 						break ;
 					}
+					ray_tmp.pos = vec_add(phit, tmp_obj.norm);
+					if (tmp_obj.objtype == PLANE && intersectPlane(ray_tmp, tmp_obj.pos, tmp_obj.norm, &t0))
+					{
+						shadowed = 0;
+						break ;
+					}
 				}
 			}
 
@@ -133,7 +137,7 @@ Vec3f				raytrace(Ray *ray, t_data *data)
 			if (shadowed == 1)
 			{
 				lambert = calculateLambert(lightDirection, nhit);
-				phongTerm = calculatePhong(lightDirection, phit, nhit, *ray);
+				phongTerm = calculatePhong(lightDirection, phit, nhit, *ray, current_obj->mat);
 
 			}
 			color = vec_mult( current_obj->mat.surf_color, vec_add( vec_mult_f( current_light.mat.emis_color, lambert), vec_mult_f( current_obj->mat.surf_color, phongTerm ) ) );
@@ -192,16 +196,16 @@ void				init(t_data *data)
 {
 	data->surf = esdl_create_surface(SDL_RX, SDL_RY);
 
-	Material		white = set_material(set_vec(0.9f, 0.9f, 0.9f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
+	Material		white = set_material(set_vec(0.9f, 0.9f, 0.9f), set_vec(0.0f, 0.0f, 0.0f), 5.0f, 100.0f);
 	Material		grey = set_material(set_vec(0.2f, 0.2f, 0.2f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
-	Material		red = set_material(set_vec(1.0f, 0.32f, 0.36f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
-	Material		blue = set_material(set_vec(0.65f, 0.77f, 0.97f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
-	Material		yellow = set_material(set_vec(0.9f, 0.76f, 0.46f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
+	Material		red = set_material(set_vec(1.0f, 0.32f, 0.36f), set_vec(0.0f, 0.0f, 0.0f), 5.0f, 100.0f);
+	Material		blue = set_material(set_vec(0.65f, 0.77f, 0.97f), set_vec(0.0f, 0.0f, 0.0f), 5.0f, 100.0f);
+	Material		yellow = set_material(set_vec(0.9f, 0.76f, 0.46f), set_vec(0.0f, 0.0f, 0.0f), 5.0f, 100.0f);
 
 	Material		light = set_material(set_vec(0.0f, 0.0f, 0.0f), set_vec(2.0f, 2.0f, 2.0f), 0.0f, 0.0f);
 
 	init_objects(7, &(data->objects));
-	data->objects.objects[0] = set_plane(set_vec(0.0f, -3.0f, 0.0f), set_vec(0.0f, 1.0f, 0.0f), grey);
+	data->objects.objects[0] = set_plane(set_vec(0.0f, -3.0f, 0.0f), set_vec(0.0f, 1.0f, 0.0f), white);
     data->objects.objects[1] = set_sphere(set_vec(0.0f, 0.0, -20.0f), 4.0f, red);
     data->objects.objects[2] = set_sphere(set_vec(5.0f, -1.0f, -15.0f), 2.0f, yellow);
     data->objects.objects[3] = set_sphere(set_vec(5.0f, 0.0f, -25.0f), 3.0f, blue);
