@@ -119,13 +119,13 @@ Vec3f				raytrace(Ray *ray, t_data *data)
 				{
 					Object tmp_obj = data->objects.objects[j];
 					Ray ray_tmp = {vec_add(phit, nhit), lightDirection};
-					if (tmp_obj.objtype == SPHERE && sphere_intersect(&ray_tmp, tmp_obj, &t0, &t1))
+					if (tmp_obj.objtype == SPHERE && sphere_intersect(&ray_tmp, tmp_obj, &t0, &t1) == 1)
 					{
 						shadowed = 0;
 						break ;
 					}
 					ray_tmp.pos = vec_add(phit, tmp_obj.norm);
-					if (tmp_obj.objtype == PLANE && intersectPlane(ray_tmp, tmp_obj.pos, tmp_obj.norm, &t0))
+					if (tmp_obj.objtype == PLANE && intersectPlane(ray_tmp, tmp_obj.pos, tmp_obj.norm, &t0) == 1)
 					{
 						shadowed = 0;
 						break ;
@@ -140,7 +140,7 @@ Vec3f				raytrace(Ray *ray, t_data *data)
 				phongTerm = calculatePhong(lightDirection, phit, nhit, *ray, current_obj->mat);
 
 			}
-			color = vec_mult( current_obj->mat.surf_color, vec_add( vec_mult_f( current_light.mat.emis_color, lambert), vec_mult_f( current_obj->mat.surf_color, phongTerm ) ) );
+			color = vec_add(color, vec_mult( current_obj->mat.surf_color, vec_add( vec_mult_f( current_light.mat.emis_color, lambert), vec_mult_f( current_obj->mat.surf_color, phongTerm ) ) ));
 
 		}
 	}
@@ -197,14 +197,14 @@ void				init(t_data *data)
 	data->surf = esdl_create_surface(SDL_RX, SDL_RY);
 
 	Material		white = set_material(set_vec(0.9f, 0.9f, 0.9f), set_vec(0.0f, 0.0f, 0.0f), 5.0f, 100.0f);
-	Material		grey = set_material(set_vec(0.2f, 0.2f, 0.2f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
+	//Material		grey = set_material(set_vec(0.2f, 0.2f, 0.2f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
 	Material		red = set_material(set_vec(1.0f, 0.32f, 0.36f), set_vec(0.0f, 0.0f, 0.0f), 5.0f, 100.0f);
 	Material		blue = set_material(set_vec(0.65f, 0.77f, 0.97f), set_vec(0.0f, 0.0f, 0.0f), 5.0f, 100.0f);
 	Material		yellow = set_material(set_vec(0.9f, 0.76f, 0.46f), set_vec(0.0f, 0.0f, 0.0f), 5.0f, 100.0f);
 
 	Material		light = set_material(set_vec(0.0f, 0.0f, 0.0f), set_vec(2.0f, 2.0f, 2.0f), 0.0f, 0.0f);
 
-	init_objects(7, &(data->objects));
+	init_objects(8, &(data->objects));
 	data->objects.objects[0] = set_plane(set_vec(0.0f, -3.0f, 0.0f), set_vec(0.0f, 1.0f, 0.0f), white);
     data->objects.objects[1] = set_sphere(set_vec(0.0f, 0.0, -20.0f), 4.0f, red);
     data->objects.objects[2] = set_sphere(set_vec(5.0f, -1.0f, -15.0f), 2.0f, yellow);
@@ -212,6 +212,7 @@ void				init(t_data *data)
     data->objects.objects[4] = set_sphere(set_vec(-5.5f, 0.0f, -15.0f), 3.0f, white);
     data->objects.objects[5] = set_light(set_vec(-50.0f, 20.0f, -30.0f), 3.0f, light);
     data->objects.objects[6] = set_light(set_vec(50.0f, 20.0f, -30.0f), 3.0f, light);
+    data->objects.objects[7] = set_light(set_vec(0.0f, 20.0f, -30.0f), 3.0f, light);
 
 }
 
