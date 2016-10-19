@@ -18,7 +18,7 @@ Object		set_sphere(Vec3f pos, float radius, Material mat)
 {
 	Object	object;
 
-	object.objtype = SPHERE;
+	object.type = SPHERE;
 	object.pos = pos;
 	object.rad = radius;
 	object.mat = mat;
@@ -30,6 +30,7 @@ Object		set_light(Vec3f pos, float radius, Material mat)
 {
 	Object	light;
 
+	light.type = SPHERE;
 	light.pos = pos;
 	light.rad = radius;
 	light.mat = mat;
@@ -37,7 +38,7 @@ Object		set_light(Vec3f pos, float radius, Material mat)
 	return (light);
 }
 
-int			sphere_intersect(Ray *ray, Object object, float *t0, float *t1)
+int			sphere_inter(Ray *ray, Object object, float *t0, float *t1)
 {
 	t_vec l = vec_sub(object.pos, ray->pos);
 	float tca = dot_product(l, ray->dir);

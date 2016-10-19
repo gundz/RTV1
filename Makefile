@@ -3,7 +3,9 @@
 	SRCS =			main.c \
 					vec_tools.c \
 					spheres.c \
+					plane.c \
 					material.c \
+					light.c \
 
 	#CUDA CONFIG
 	SRCS_NO_CUDA =	\

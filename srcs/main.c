@@ -13,140 +13,110 @@
 #include <easy_sdl.h>
 #include <rtv1.h>
 
-int
-intersectPlane(Ray ray, Vec3f pos, Vec3f normal, float *t)
+Object				*trace_objects(Ray *ray, Objects *objects, float *tnear)
 {
-	float denom;
+	float			t0;
+	float			t1;
+	Object			obj;
+	Object			*current_obj;
 
-	ray.dir = vec_normalize(ray.dir);
-
-	denom = dot_product(normal, ray.dir);
-	if (fabs(denom) > 1e-6)
+	current_obj = NULL;
+	*tnear = INFINITY;
+	for (size_t i = 0; i < objects->nb_obj; i++)
 	{
-		*t = dot_product(vec_sub(pos, ray.pos), normal) / denom;
-		if (*t >= 0)
-			return (1);
+		obj = objects->objects[i];
+		t0 = INFINITY;
+		t1 = INFINITY;
+		if (obj.type == SPHERE && sphere_inter(ray, obj, &t0, &t1))
+		{
+			if (t0 < 0)
+				t0 = t1;
+			if (t0 < *tnear)
+			{
+				*tnear = t0;
+				current_obj = &(objects->objects[i]);
+			}
+		}
+		else if (obj.type == PLANE && plane_inter(*ray, obj.pos, obj.norm, &t0))
+		{
+			if (t0 < *tnear)
+			{
+				*tnear = t0;
+				current_obj = &(objects->objects[i]);
+			}
+		}
 	}
-	return (0);
+	return (current_obj);
 }
 
-Object
-set_plane(Vec3f pos, Vec3f norm, Material mat)
+int					is_shadowed(Ray hit, Vec3f light_dir, Objects *objects, size_t i)
 {
-	Object	object;
+	float			t0;
+	Object			obj;
+	Ray				ray;
 
-	object.objtype = PLANE;
-	object.pos = pos;
-	object.norm = norm;
-	object.mat = mat;
-	return (object);
+	for (size_t j = 0; j < objects->nb_obj; j++)
+	{
+		if (i == j)
+			continue ;
+		obj = objects->objects[j];
+		ray.pos = vec_add(hit.pos, vec_mult_f(hit.dir, 1e-4));
+		ray.dir = light_dir;
+		if (obj.type == SPHERE && sphere_inter(&ray, obj, &t0, &t0) == 1)
+			return (0);
+		ray.pos = vec_add(hit.pos, obj.norm);
+		if (obj.type == PLANE && plane_inter(ray, obj.pos, obj.norm, &t0) == 1)
+			return (0);
+	}
+	return (1);
 }
 
-float			calculateLambert(t_vec lightDirection, t_vec nhit)
+Vec3f				lighting(Ray *ray, Ray hit, Objects *objects, Object *current_obj)
 {
-	return (max(0.0f, dot_product(lightDirection, nhit)));
-}
+	Vec3f			color;
+	Object			current_light;
+	Vec3f			light_dir;
+	float			lambert = 0.0f;
+	float			phong = 0.0f;
 
-float calculatePhong(Vec3f lightDirection, Vec3f phit, Vec3f nhit, Ray ray, Material mat)
-{
-	t_vec viewDirection = vec_sub(phit, ray.pos);
-	viewDirection = vec_normalize(viewDirection);
-
-
-	t_vec blinnDirection = vec_sub(lightDirection, viewDirection);
-	blinnDirection = vec_normalize(blinnDirection);
-
-	float blinnTerm = max(dot_product(blinnDirection, nhit), 0.0f);
-	return mat.spec_value * powf(blinnTerm, mat.spec_power);
+	color = set_vec(0.0f, 0.0f, 0.0f);
+	for (size_t i = 0; i < objects->nb_obj; i++)
+	{
+		if (objects->objects[i].is_light == 1)
+		{
+			current_light = objects->objects[i];
+			light_dir = vec_sub(current_light.pos, hit.pos);
+			light_dir = vec_normalize(light_dir);
+			lambert = 0.0f;
+			phong = 0.0f;
+			if (is_shadowed(hit, light_dir, objects, i))
+			{
+				lambert = calc_lambert(light_dir, hit.dir);
+				phong = calc_phong(light_dir, hit, *ray, current_obj->mat);
+			}
+			color = vec_add(color, vec_mult(current_obj->mat.surf_color, vec_add( vec_mult_f(current_light.mat.emis_color, lambert), vec_mult_f(current_obj->mat.surf_color, phong))));
+		}
+	}
+	return (vec_mult(current_obj->mat.surf_color, vec_add(color, current_obj->mat.emis_color)));
 }
 
 Vec3f				raytrace(Ray *ray, t_data *data)
 {
 	float			tnear;
-	float			t0;
-	float			t1;
+	Object			*current_obj;
 
-	Object			*current_obj = NULL;
-
-
-	tnear = INFINITY;
-	for (size_t i = 0; i < data->objects.nb_obj; i++)
-	{
-		t0 = INFINITY;
-		t1 = INFINITY;
-		if (data->objects.objects[i].objtype == SPHERE && sphere_intersect(ray, data->objects.objects[i], &t0, &t1))
-		{
-			if (t0 < 0)
-				t0 = t1;
-			if (t0 < tnear)
-			{
-				tnear = t0;
-				current_obj = &(data->objects.objects[i]);
-			}
-		}
-		else if (data->objects.objects[i].objtype == PLANE && intersectPlane(*ray, data->objects.objects[i].pos, data->objects.objects[i].norm, &t0))
-		{
-			if (t0 < tnear)
-			{
-				tnear = t0;
-				current_obj = &(data->objects.objects[i]);
-			}
-		}
-	}
+	current_obj = trace_objects(ray, &(data->objects), &tnear);
 
 	if (current_obj == NULL)
 		return (set_vec(0.0f, 0.0f, 0.0f));
 
+	Ray hit;
+	hit.pos = vec_add(ray->pos, vec_mult_f(ray->dir, tnear));
+	hit.dir = vec_sub(hit.pos, current_obj->pos);
+	hit.dir = vec_normalize(hit.dir);
 
-	t_vec phit = vec_add(ray->pos, vec_mult_f(ray->dir, tnear));
-	t_vec nhit = vec_sub(phit, current_obj->pos);
-	nhit = vec_normalize(nhit);
-
-	Vec3f color = set_vec(0.0f, 0.0f, 0.0f);
-	for (size_t i = 0; i < data->objects.nb_obj; i++)
-	{
-		if (data->objects.objects[i].is_light == 1)
-		{
-			int shadowed = 1;
-			Object current_light = data->objects.objects[i];
-
-			t_vec lightDirection = vec_sub(current_light.pos, phit);
-			lightDirection = vec_normalize(lightDirection);
-
-			for (size_t j = 0; j < data->objects.nb_obj; j++)
-			{
-				if (i != j)
-				{
-					Object tmp_obj = data->objects.objects[j];
-					Ray ray_tmp = {vec_add(phit, vec_mult_f(nhit, 1e-4)), lightDirection};
-					//ray_tmp.pos = vec_normalize(ray_tmp.pos);
-					if (tmp_obj.objtype == SPHERE && sphere_intersect(&ray_tmp, tmp_obj, &t0, &t1) == 1)
-					{
-						shadowed = 0;
-						break ;
-					}
-					ray_tmp.pos = vec_add(phit, tmp_obj.norm);
-					ray_tmp.pos = vec_normalize(ray_tmp.pos);
-
-					if (tmp_obj.objtype == PLANE && intersectPlane(ray_tmp, tmp_obj.pos, tmp_obj.norm, &t0) == 1)
-					{
-						shadowed = 0;
-						break ;
-					}
-				}
-			}
-
-			float lambert = 0, phongTerm = 0;
-			if (shadowed == 1)
-			{
-				lambert = calculateLambert(lightDirection, nhit);
-				phongTerm = calculatePhong(lightDirection, phit, nhit, *ray, current_obj->mat);
-
-			}
-			color = vec_add(color, vec_mult( current_obj->mat.surf_color, vec_add( vec_mult_f( current_light.mat.emis_color, lambert), vec_mult_f( current_obj->mat.surf_color, phongTerm ) ) ));
-		}
-	}
-	return (vec_mult(current_obj->mat.surf_color, vec_add(color, current_obj->mat.emis_color)));
+	Vec3f color = lighting(ray, hit, &(data->objects), current_obj);
+	return (color);
 }
 
 Vec3f			pixelCoordinateToWorldCoordinate(float x, float y, int rx, int ry)
@@ -198,7 +168,7 @@ void				init(t_data *data)
 {
 	data->surf = esdl_create_surface(SDL_RX, SDL_RY);
 
-	Material		white = set_material(set_vec(0.9f, 0.9f, 0.9f), set_vec(0.0f, 0.0f, 0.0f), 1.0f, 255.0f);
+	Material		white = set_material(set_vec(0.9f, 0.9f, 0.9f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
 	//Material		grey = set_material(set_vec(0.2f, 0.2f, 0.2f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
 	Material		red = set_material(set_vec(1.0f, 0.32f, 0.36f), set_vec(0.0f, 0.0f, 0.0f), 1.0f, 255.0f);
 	Material		blue = set_material(set_vec(0.65f, 0.77f, 0.97f), set_vec(0.0f, 0.0f, 0.0f), 1.0f, 255.0f);
@@ -240,25 +210,24 @@ int					main(int argc, char **argv)
 	t_esdl			esdl;
 
 	data.esdl = &esdl;
-	if (esdl_init(&esdl, 1920, 1080, "RTV1") == -1)
+	if (esdl_init(&esdl, 640, 480, "RTV1") == -1)
 		return (-1);
 	init(&data);
 
 
-	struct timeval stop, start;
-	gettimeofday(&start, NULL);
+	unsigned int start, end;
+	start = SDL_GetTicks();
 
 	render(&data);
 
-	gettimeofday(&stop, NULL);
-	printf("took %ld\n", stop.tv_usec - start.tv_usec);
-
-	display(&data);
-
+	end = SDL_GetTicks();
+	printf("took %d\n", end - start);
 
 	while (esdl.run)
 	{
 		esdl_update_events(&esdl.en.in, &esdl.run);
+
+		display(&data);
 
 		esdl_fps_limit(&esdl);
 		esdl_fps_counter(&esdl);
