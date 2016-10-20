@@ -14,6 +14,8 @@ Vec3f				set_vec(float x, float y, float z);
 
 Vec3f               vec_sub(Vec3f v1, Vec3f v2);
 
+Vec3f               vec_sub_f(t_vec v1, float f);
+
 Vec3f				vec_add(Vec3f v1, Vec3f v2);
 
 Vec3f				vec_add_f(Vec3f v1, float value);
@@ -21,6 +23,8 @@ Vec3f				vec_add_f(Vec3f v1, float value);
 Vec3f         		vec_mult_f(Vec3f v, float f);
 
 Vec3f				vec_mult(Vec3f v1, Vec3f v2);
+
+Vec3f				cross_product(Vec3f a,Vec3f b);
 
 float				dot_product(Vec3f v1, Vec3f v2);
 

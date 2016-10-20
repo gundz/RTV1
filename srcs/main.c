@@ -13,6 +13,43 @@
 #include <easy_sdl.h>
 #include <rtv1.h>
 
+Object				set_cylinder(Vec3f a, Vec3f b, int rad, Material mat)
+{
+	Object			cylinder;
+
+	cylinder.type = CYLINDER;
+	cylinder.pos = a;
+	cylinder.norm = b;
+	cylinder.rad = rad;
+	cylinder.mat = mat;
+	return (cylinder);
+}
+
+int					cylinder_inter(Ray *ray, Object *object, float *t0, float *t1)
+{
+	Vec3f			A = object->pos;
+	Vec3f			B = object->norm;
+	Vec3f			V = ray->dir;
+
+	Vec3f			AB = vec_sub(B, A);
+	Vec3f			AO = vec_sub(ray->pos, A);
+	Vec3f			AOxAB = cross_product(AO, AB);
+	Vec3f			VxAB = cross_product(V, AB);
+	float 			ab2 = dot_product(AB, AB);
+	float			a = dot_product(VxAB, VxAB);
+	float			b = 2 * dot_product(VxAB, AOxAB);
+	float			c = dot_product(AOxAB, AOxAB) - ((object->rad * object->rad) * ab2);
+
+	float delta = (b * b) - (4 * a * c);
+	if (delta < 0.0f)
+		return (0);
+	if (delta == 0.0f)
+		return (1);
+	*t0 = (-b - sqrt(delta) / (2 * a));
+	*t1 = (-b + sqrt(delta) / (2 * a));
+	return (1);
+}
+
 Object				*trace_objects(Ray *ray, Objects *objects, float *tnear)
 {
 	float			t0;
@@ -27,6 +64,16 @@ Object				*trace_objects(Ray *ray, Objects *objects, float *tnear)
 		obj = objects->objects[i];
 		t0 = INFINITY;
 		t1 = INFINITY;
+		if (obj.type == CYLINDER && cylinder_inter(ray, &obj, &t0, &t1))
+		{
+			if (t0 < 0)
+				t0 = t1;
+			if (t0 < *tnear)
+			{
+				*tnear = t0;
+				current_obj = &(objects->objects[i]);
+			}
+		}
 		if (obj.type == SPHERE && sphere_inter(ray, obj, &t0, &t1))
 		{
 			if (t0 < 0)
@@ -37,7 +84,7 @@ Object				*trace_objects(Ray *ray, Objects *objects, float *tnear)
 				current_obj = &(objects->objects[i]);
 			}
 		}
-		else if (obj.type == PLANE && plane_inter(*ray, obj.pos, obj.norm, &t0))
+		if (obj.type == PLANE && plane_inter(*ray, obj.pos, obj.norm, &t0))
 		{
 			if (t0 < *tnear)
 			{
@@ -102,10 +149,28 @@ Vec3f				lighting(Ray *ray, Ray hit, Objects *objects, Object *current_obj)
 
 Vec3f				raytrace(Ray *ray, t_data *data)
 {
-	float			tnear;
-	Object			*current_obj;
+	float			tnear = INFINITY;
+	Object			*current_obj = NULL;
 
-	current_obj = trace_objects(ray, &(data->objects), &tnear);
+	//current_obj = trace_objects(ray, &(data->objects), &tnear);
+
+	for (size_t i = 0; i < data->objects.nb_obj; i++)
+	{
+		Object obj = data->objects.objects[i];
+		float t0 = INFINITY;
+		float t1 = INFINITY;
+		if (obj.type == CYLINDER && cylinder_inter(ray, &obj, &t0, &t1))
+		{
+			if (t0 < 0)
+				t0 = t1;
+			if (t0 < tnear)
+			{
+				tnear = t0;
+				current_obj = &(data->objects.objects[i]);
+			}
+			//return (set_vec(1.0f, 1.0f, 1.0f));
+		}
+	}
 
 	if (current_obj == NULL)
 		return (set_vec(0.0f, 0.0f, 0.0f));
@@ -169,22 +234,25 @@ void				init(t_data *data)
 	data->surf = esdl_create_surface(SDL_RX, SDL_RY);
 
 	Material		white = set_material(set_vec(0.9f, 0.9f, 0.9f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
-	//Material		grey = set_material(set_vec(0.2f, 0.2f, 0.2f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
+	// Material		grey = set_material(set_vec(0.2f, 0.2f, 0.2f), set_vec(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
 	Material		red = set_material(set_vec(1.0f, 0.32f, 0.36f), set_vec(0.0f, 0.0f, 0.0f), 1.0f, 255.0f);
-	Material		blue = set_material(set_vec(0.65f, 0.77f, 0.97f), set_vec(0.0f, 0.0f, 0.0f), 1.0f, 255.0f);
-	Material		yellow = set_material(set_vec(0.9f, 0.76f, 0.46f), set_vec(0.0f, 0.0f, 0.0f), 1.0f, 255.0f);
+	// Material		blue = set_material(set_vec(0.65f, 0.77f, 0.97f), set_vec(0.0f, 0.0f, 0.0f), 1.0f, 255.0f);
+	// Material		yellow = set_material(set_vec(0.9f, 0.76f, 0.46f), set_vec(0.0f, 0.0f, 0.0f), 1.0f, 255.0f);
 
 	Material		light = set_material(set_vec(0.0f, 0.0f, 0.0f), set_vec(1.0f, 1.0f, 1.0f), 0.0f, 0.0f);
 
-	init_objects(7, &(data->objects));
+	init_objects(3, &(data->objects));
 	data->objects.objects[0] = set_plane(set_vec(0.0f, -4.0f, 0.0f), set_vec(0.0f, 1.0f, 0.0f), white);
-	//data->objects.objects[0] = set_sphere(set_vec(0.0f, -10004.0f, 0.0f), 10000.0f, white);
-    data->objects.objects[1] = set_sphere(set_vec(0.0f, 0.0, -20.0f), 4.0f, red);
-    data->objects.objects[2] = set_sphere(set_vec(5.0f, -1.0f, -15.0f), 2.0f, yellow);
-    data->objects.objects[3] = set_sphere(set_vec(5.0f, 0.0f, -25.0f), 3.0f, blue);
-    data->objects.objects[4] = set_sphere(set_vec(-5.5f, 0.0f, -15.0f), 3.0f, white);
-    data->objects.objects[5] = set_light(set_vec(-50.0f, 10.0f, -30.0f), 3.0f, light);
-    data->objects.objects[6] = set_light(set_vec(50.0f, 20.0f, -30.0f), 3.0f, light);
+    data->objects.objects[1] = set_light(set_vec(0.0f, 20.0f, -30.0f), 3.0f, light);
+
+	data->objects.objects[2] = set_cylinder(set_vec(0.0f, 30.0f, -30.0f), set_vec(0.0f, 1.0f, 0.0f), 4, red);
+
+    // data->objects.objects[1] = set_sphere(set_vec(0.0f, 0.0, -20.0f), 4.0f, red);
+    // data->objects.objects[2] = set_sphere(set_vec(5.0f, -1.0f, -15.0f), 2.0f, yellow);
+    // data->objects.objects[3] = set_sphere(set_vec(5.0f, 0.0f, -25.0f), 3.0f, blue);
+    // data->objects.objects[4] = set_sphere(set_vec(-5.5f, 0.0f, -15.0f), 3.0f, white);
+    // data->objects.objects[5] = set_light(set_vec(-50.0f, 10.0f, -30.0f), 3.0f, light);
+    // data->objects.objects[6] = set_light(set_vec(50.0f, 20.0f, -30.0f), 3.0f, light);
 
 }
 

@@ -8,7 +8,7 @@
 
 typedef enum			e_object_type
 {
-	SPHERE, PLANE
+	SPHERE, PLANE, CYLINDER, CONE
 }						t_object_type;
 typedef t_object_type	ObjType;
 
@@ -24,8 +24,8 @@ typedef t_material 		Material;
 typedef struct			s_object
 {
 	Vec3f				pos;
-	float				rad;
 	Vec3f				norm;
+	float				rad;
 	Material			mat;
 	int					is_light;
 	int					type;

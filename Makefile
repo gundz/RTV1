@@ -28,7 +28,7 @@ endif
 
 	EXTENTION =		c
 
-	CFLAGS = 		-Wall -Werror -Wextra -g
+	CFLAGS = 		-Wall -Werror -Wextra -O3
 
 #ADVANCED CONFIG
 	SRC_PATH =		./srcs/

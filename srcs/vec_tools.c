@@ -1,9 +1,8 @@
-#include <vec.h>
-#include <math.h>
+#include <rtv1.h>
 
-inline Vec3f				set_vec(float x, float y, float z)
+t_vec				set_vec(float x, float y, float z)
 {
-	Vec3f			ret;
+	t_vec			ret;
 
 	ret.x = x;
 	ret.y = y;
@@ -11,9 +10,9 @@ inline Vec3f				set_vec(float x, float y, float z)
 	return (ret);
 }
 
-inline Vec3f               vec_sub(Vec3f v1, Vec3f v2)
+t_vec               vec_sub(t_vec v1, t_vec v2)
 {
-    Vec3f           ret;
+    t_vec           ret;
 
     ret.x = v1.x - v2.x;
     ret.y = v1.y - v2.y;
@@ -21,9 +20,19 @@ inline Vec3f               vec_sub(Vec3f v1, Vec3f v2)
     return (ret);
 }
 
-inline Vec3f				vec_add(Vec3f v1, Vec3f v2)
+t_vec               vec_sub_f(t_vec v1, float f)
 {
-	Vec3f			ret;
+    t_vec           ret;
+
+    ret.x = v1.x - f;
+    ret.y = v1.y - f;
+    ret.z = v1.z - f;
+    return (ret);
+}
+
+t_vec				vec_add(t_vec v1, t_vec v2)
+{
+	t_vec			ret;
 
 	ret.x = v1.x + v2.x;
 	ret.y = v1.y + v2.y;
@@ -31,9 +40,9 @@ inline Vec3f				vec_add(Vec3f v1, Vec3f v2)
 	return (ret);
 }
 
-inline Vec3f				vec_add_f(Vec3f v1, float value)
+t_vec				vec_add_f(t_vec v1, float value)
 {
-	Vec3f			ret;
+	t_vec			ret;
 
 	ret.x = v1.x + value;
 	ret.y = v1.y + value;
@@ -41,9 +50,9 @@ inline Vec3f				vec_add_f(Vec3f v1, float value)
 	return (ret);
 }
 
-inline Vec3f         vec_mult_f(Vec3f v, float f)
+t_vec         vec_mult_f(t_vec v, float f)
 {
-    Vec3f     ret;
+    t_vec     ret;
 
     ret.x = v.x * f;
     ret.y = v.y * f;
@@ -51,9 +60,9 @@ inline Vec3f         vec_mult_f(Vec3f v, float f)
     return (ret);
 }
 
-inline Vec3f				vec_mult(Vec3f v1, Vec3f v2)
+t_vec				vec_mult(t_vec v1, t_vec v2)
 {
-	Vec3f			ret;
+	t_vec			ret;
 
 	ret.x = v1.x * v2.x;
 	ret.y = v1.y * v2.y;
@@ -61,19 +70,26 @@ inline Vec3f				vec_mult(Vec3f v1, Vec3f v2)
 	return (ret);
 }
 
-inline float				dot_product(Vec3f v1, Vec3f v2)
+Vec3f				cross_product(Vec3f a,Vec3f b)
+{
+	return (set_vec(a.y * b.z - a.z * b.y,
+		a.z * b.x - a.x * b.z,
+		a.x * b.y - a.y * b.x));
+}
+
+float				dot_product(t_vec v1, t_vec v2)
 {
 	return (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
 }
 
-inline float				vec_length(Vec3f vec)
+float				vec_length(t_vec vec)
 {
 	return (sqrtf(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z));
 }
 
-Vec3f				vec_normalize(Vec3f vec)
+t_vec				vec_normalize(t_vec vec)
 {
-	Vec3f			ret;
+	t_vec			ret;
 	float			len;
 
 	len = vec_length(vec);
@@ -95,10 +111,4 @@ float				min(float a, float b)
 	if (a < b)
 		return (a);
 	return (b);
-}
-
-#include <stdio.h>
-void				debug_vec(Vec3f vec)
-{
-	printf("x = %f y = %f z = %f\n", vec.x, vec.y, vec.z);
 }
